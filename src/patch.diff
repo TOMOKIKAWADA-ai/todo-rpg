@@ -1,11 +1,13 @@
-cat > patch.diff <<'EOF'
 diff --git a/src/TodoRPGApp.jsx b/src/TodoRPGApp.jsx
 --- a/src/TodoRPGApp.jsx
 +++ b/src/TodoRPGApp.jsx
 @@
 -    timers.current.shakeTimer = setTimeout(() => setPressPhase("hard"), 1000);
+-    timers.current.completeTimer = setTimeout(() => {
++    /* 振動開始を 0.8 s に短縮 */
 +    timers.current.shakeTimer = setTimeout(() => setPressPhase("hard"), 800);
++    /* 長押し完了を 2.5 s に延長 */
++    timers.current.completeTimer = setTimeout(() => {
 @@
 -    }, 2000);
 +    }, 2500);
-EOF
