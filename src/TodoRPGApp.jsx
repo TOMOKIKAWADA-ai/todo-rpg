@@ -178,8 +178,8 @@ export default function TodoRPGApp() {
       {/* CSS */}
       <style>{`
         .slash-line{position:absolute;width:120%;height:4px;left:-25%;top:25%;
-          background:linear-gradient(90deg,transparent 10%,rgba(255,255,255,.95) 50%,transparent 90%);
-          border-radius:9999px;box-shadow:0 0 6px 2px rgba(255,255,255,.5);transform-origin:0 0;pointer-events:none;}
+          background:linear-gradient(90deg,transparent 10%,rgba(128,128,128,.95) 50%,transparent 90%);
+          border-radius:9999px;box-shadow:0 0 6px 2px rgba(128,128,128,.5);transform-origin:0 0;pointer-events:none;}
         @keyframes slash{0%{transform:rotate(10deg) translate(0,0);}40%{transform:rotate(10deg) translate(50%,50%);}
           80%{transform:rotate(10deg) translate(50%,50%);}100%{transform:rotate(10deg) translate(100%,100%);opacity:0;}}
         .animate-slash{animation:slash .8s cubic-bezier(.4,0,.2,1) forwards;}
