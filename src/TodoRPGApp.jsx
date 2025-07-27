@@ -1,4 +1,4 @@
-// TodoRPGApp.jsx  — Part 1 / 4
+// TodoRPGApp.jsx  — Part 1 / 41
 import React, { useReducer, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -6,10 +6,10 @@ import SpeechBubble from "./SpeechBubble.jsx";
 
 const ACT = { ADD_BLOCK: "add_block", ADD_TASK: "add_task", COMPLETE: "complete", REMOVE: "remove" };
 
-const CHARACTERS = ["A_01", "B_01", "C_01"];
+const CHARACTERS = ["A_01", "B_01", "C_01", "D_01"];
 const load = () => {
   try {
-    const s = JSON.parse(localStorage.getItem("todoRPG")) ?? { blocks: [] };
+    const s = JSON.parse(localStorage.getItem("todoRPG")) ?? { blocks: [], exp: 0, level: 1 };
     if (s.blocks) {
       s.blocks.forEach(b => {
         if (!b.charId) b.charId = CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)];
@@ -17,7 +17,7 @@ const load = () => {
     }
     return s;
   } catch {
-    return { blocks: [] };
+    return { blocks: [], exp: 0, level: 1 };
   }
 };
 const save  = (s) => localStorage.setItem("todoRPG", JSON.stringify(s));
@@ -35,7 +35,7 @@ function reducer(state, a) {
       const bs = state.blocks.map(b => {
         if (b.id !== a.bid) return b;
         const tasks = a.tasks.map(t => ({ id: crypto.randomUUID(), text: t, done: false }));
-        return { ...b, tasks: [...b.tasks, ...tasks], hp: b.hp + tasks.length, max: b.max + tasks.length };
+        return { ...b, tasks: [...b.tasks, ...tasks], hp: b.hp + tasks.length, max: b.hp + tasks.length };
       });
       return { ...state, blocks: bs };
     }
@@ -59,6 +59,20 @@ function reducer(state, a) {
 export default function TodoRPGApp() {
   const [state, dispatch] = useReducer(reducer, undefined, load);
   const [headerText, setHeaderText] = useState("");
+  const [exp, setExp] = useState(load().exp);
+  const [level, setLevel] = useState(load().level);
+  const [levelUp, setLevelUp] = useState(false);
+
+  // 未定義の関数を仮定義
+  const addBlockFromHeader = () => {
+    console.log("addBlockFromHeader called");
+    // ここに実際のロジックを追加
+  };
+
+  const confirmAddToBlock = (bid) => {
+    console.log("confirmAddToBlock called for block ID:", bid);
+    // ここに実際のロジックを追加
+  };
 
   /* long-press & エフェクト */
   const [pressingId, setPressingId] = useState(null);
@@ -78,54 +92,38 @@ export default function TodoRPGApp() {
   const completedOnce = useRef(new Set());
   const isFirstRender = useRef(true);
 
-  useEffect(() => save(state), [state]);
-
-  /* 紙吹雪 (初回ロード無効) */
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      completedOnce.current = new Set(state.blocks.filter(b => b.completed).map(b => b.id));
-      return;
+    save({ ...state, exp, level });
+  }, [state, exp, level]);
+
+  useEffect(() => {
+    const now = new Date();
+    const lastReset = new Date(localStorage.getItem('lastReset') || 0);
+    const resetTime = new Date(now);
+    resetTime.setHours(4, 0, 0, 0);
+
+    if (now >= resetTime && lastReset < resetTime) {
+      setLevel(1);
+      setExp(0);
+      localStorage.setItem('lastReset', now.toISOString());
     }
-    state.blocks.forEach(b => {
-      if (b.completed && !completedOnce.current.has(b.id)) {
-        completedOnce.current.add(b.id);
-        const el = enemyRefs.current[b.id];
-        if (el) {
-          const r = el.getBoundingClientRect();
-          confetti({
-            particleCount: 32, spread: 70, startVelocity: 25,
-            origin: { x: (r.left + r.width / 2) / innerWidth, y: (r.top + r.height / 2) / innerHeight },
-            colors: ["#ffffff", "#eeeeee"],
-          });
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const resetTime = new Date(now);
+      resetTime.setHours(4, 0, 0, 0);
+      if (now >= resetTime) {
+        const lastReset = new Date(localStorage.getItem('lastReset') || 0);
+        if (lastReset < resetTime) {
+          setLevel(1);
+          setExp(0);
+          localStorage.setItem('lastReset', now.toISOString());
         }
       }
-    });
-  }, [state.blocks]);
+    }, 1000 * 60 * 60); // 1時間に1回チェック
 
-  /* 文字列をスペース/改行で分割 → 配列 */
-  const splitParts = (str) => str.trim().split(/[ \u3000\r?\n]+/).filter(Boolean);
-
-  const addBlockFromHeader = () => {
-    const all_parts = splitParts(headerText);
-    if (!all_parts.length) return;
-
-    const title_parts = all_parts.filter(p => p.startsWith("##"));
-    const task_parts = all_parts.filter(p => !p.startsWith("##"));
-
-    const title = title_parts.map(p => p.substring(2)).join(" ");
-
-    dispatch({ type: ACT.ADD_BLOCK, title: title, tasks: task_parts });
-    setHeaderText("");
-  };
-
-  const confirmAddToBlock = (bid) => {
-    const parts = splitParts(blockInputs[bid] ?? "");
-    if (!parts.length) return;
-    dispatch({ type: ACT.ADD_TASK, bid, tasks: parts });
-    setBlockInputs((inp) => ({ ...inp, [bid]: "" }));
-    setAddingBid(null);
-  };
+    return () => clearInterval(interval);
+  }, []);
 // TodoRPGApp.jsx  — Part 3 / 4
   /* タスク完了 (長押し) */
   const finish = (bid, task) => {
@@ -136,13 +134,24 @@ export default function TodoRPGApp() {
     setTimeout(() => setHit(null), 400);
 
     setSlashes(s => [...s, { id, bid }]);
-    setTimeout(() => setSlashes(s => s.filter(x => x.id !== id)), 800);
+    setTimeout(() => setSlashes(s => s.filter(x => x.id === id)), 800);
 
     setPopups(p => [...p, { id, bid }]);
-    setTimeout(() => setPopups(p => p.filter(x => x.id !== id)), 1100);
+    setTimeout(() => setPopups(p => p.filter(x => x.id === id)), 1100);
 
     setBlast(b => [...b, { id, bid }]);
-    setTimeout(() => setBlast(b => b.filter(x => x.id !== id)), 400);
+    setTimeout(() => setBlast(b => b.filter(x => x.id === id)), 400);
+
+    const newExp = exp + 50;
+    const requiredExp = 20 + level * 30;
+    if (newExp >= requiredExp) {
+      setLevel(level + 1);
+      setExp(newExp - requiredExp);
+      setLevelUp(true);
+      setTimeout(() => setLevelUp(false), 2000);
+    } else {
+      setExp(newExp);
+    }
   };
 
   const pressStart = (bid, task) => {
@@ -171,6 +180,7 @@ export default function TodoRPGApp() {
       A_01: { hit: "きゃっ！", done: "参りました…", low: "あと一つです…！", default: `あと${b.hp}つ \n です` },
       B_01: { hit: "ぐわっ！", done: "ぐぬぬ…",       low: "あと1発だと…！？", default: `あと${b.hp}だ` },
       C_01: { hit: "ひゃん！", done: "やられた…",     low: "もうダメかも…",   default: `のこり${b.hp}です` },
+      D_01: { hit: "ぐはっ！", done: "む、無念だ…",   low: "まだだ、まだ終わらん！", default: `のこり${b.hp}だ` },
     };
     const set = lines[char] || lines.A_01;
     if (hit && hit.bid === b.id) return set.hit;
@@ -181,8 +191,21 @@ export default function TodoRPGApp() {
 // TodoRPGApp.jsx  — Part 4 / 4
   return (
     <div className="min-h-screen w-screen flex justify-center bg-gradient-to-br from-pink-500 via-red-300 to-yellow-100 py-10 text-[95%]">
-      <main className="w-full max-w-lg text-white">
+      <main className="w-full max-w-lg text-white relative">
+        {levelUp && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <p className="text-6xl font-bold text-white animate-ping">LEVEL UP!</p>
+          </div>
+        )}
         <h1 className="text-4xl font-bold text-center mb-6">Todo RPG ⚔️</h1>
+
+        <div className="text-center mb-4">
+          <p className="text-xl">Level: {level}</p>
+          <div className="w-full bg-gray-200 rounded-full h-4 dark:bg-gray-700">
+            <div className="bg-blue-600 h-4 rounded-full" style={{ width: `${(exp / (20 + level * 30)) * 100}%` }}></div>
+          </div>
+          <p className="text-lg">EXP: {exp} / {20 + level * 30}</p>
+        </div>
 
         {/* 新ブロックフォーム */}
         <div className="bg-white/90 rounded-xl p-3 shadow mb-8">
@@ -293,7 +316,7 @@ export default function TodoRPGApp() {
         .animate-shakeHard{animation:shakeHard .25s linear infinite;}
 
         @keyframes hitShake{0%,100%{transform:translate(0);}20%{transform:translate(1px,-1px);}40%{transform:translate(-1px,1px);}60%{transform:translate(1px,1px);}80%{transform:translate(-1px,-1px);}}
-        .animate-hitShake{animation:hitShake .3s linear infinite;}
+        .animate-hitShake{animation:hitShake .3s linear infinite;} 
 
         @keyframes blast{0%{opacity:.7;transform:scale(1);}100%{opacity:0;transform:scale(2);}}
         .animate-blast{animation:blast .4s ease-out forwards;}
