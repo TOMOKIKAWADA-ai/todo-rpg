@@ -63,15 +63,32 @@ export default function TodoRPGApp() {
   const [level, setLevel] = useState(load().level);
   const [levelUp, setLevelUp] = useState(false);
 
-  // 未定義の関数を仮定義
   const addBlockFromHeader = () => {
-    console.log("addBlockFromHeader called");
-    // ここに実際のロジックを追加
+    if (!headerText.trim()) return;
+    
+    const lines = headerText.split(/[\s\n]+/).filter(line => line.trim());
+    if (lines.length === 0) return;
+    
+    const firstLine = lines[0];
+    const isTitle = firstLine.startsWith("##") || firstLine.startsWith("#");
+    
+    const title = isTitle ? firstLine.replace(/^#+\s*/, "") : "";
+    const tasks = isTitle ? lines.slice(1) : lines;
+    
+    dispatch({ type: ACT.ADD_BLOCK, title, tasks });
+    setHeaderText("");
   };
 
   const confirmAddToBlock = (bid) => {
-    console.log("confirmAddToBlock called for block ID:", bid);
-    // ここに実際のロジックを追加
+    const text = blockInputs[bid];
+    if (!text?.trim()) return;
+    
+    const tasks = text.split(/[\s\n]+/).filter(line => line.trim());
+    if (tasks.length === 0) return;
+    
+    dispatch({ type: ACT.ADD_TASK, bid, tasks });
+    setBlockInputs(inp => ({ ...inp, [bid]: "" }));
+    setAddingBid(null);
   };
 
   /* long-press & エフェクト */
@@ -131,7 +148,7 @@ export default function TodoRPGApp() {
     const id = crypto.randomUUID();
 
     setTimeout(() => setHit({ bid }), 100);
-    setTimeout(() => setHit(null), 400);
+    setTimeout(() => setHit(null), 800);
 
     setSlashes(s => [...s, { id, bid }]);
     setTimeout(() => setSlashes(s => s.filter(x => x.id === id)), 800);
