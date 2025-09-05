@@ -99,6 +99,7 @@ export default function TodoRPGApp() {
   const [showCreatePreset, setShowCreatePreset] = useState(false);
   const [editingPreset, setEditingPreset] = useState(null);
   const [presetForm, setPresetForm] = useState({ name: "", description: "", tasks: "" });
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const currentState = mode === "daily" ? state : longtermState;
   const currentDispatch = mode === "daily" ? dispatch : (action) => {
@@ -201,6 +202,9 @@ export default function TodoRPGApp() {
   const [popups,  setPopups]  = useState([]);
   const [hit, setHit]        = useState(null);
   const [blast, setBlast]    = useState([]);
+  
+  /* 吹き出しテキストの安定化 */
+  const [stableBubbleTexts, setStableBubbleTexts] = useState({});
 
   /* ブロック追加フォーム */
   const [addingBid, setAddingBid]     = useState(null);
@@ -215,6 +219,7 @@ export default function TodoRPGApp() {
       save({ ...state, exp, level });
     }
   }, [state, exp, level, mode]);
+
 
   useEffect(() => {
     if (mode === "longterm") {
@@ -253,20 +258,26 @@ export default function TodoRPGApp() {
 // TodoRPGApp.jsx  — Part 3 / 4
   /* タスク完了 (長押し) */
   const finish = (bid, task) => {
-    currentDispatch({ type: ACT.COMPLETE, bid, tid: task.id });
     const id = crypto.randomUUID();
 
-    setTimeout(() => setHit({ bid }), 100);
+    // hit状態を先に設定してからブロック状態を更新
+    setHit({ bid });
+    
+    // ブロック状態の更新を少し遅らせる
+    setTimeout(() => {
+      currentDispatch({ type: ACT.COMPLETE, bid, tid: task.id });
+    }, 50);
+
     setTimeout(() => setHit(null), 800);
 
     setSlashes(s => [...s, { id, bid }]);
-    setTimeout(() => setSlashes(s => s.filter(x => x.id === id)), 800);
+    setTimeout(() => setSlashes(s => s.filter(x => x.id !== id)), 800);
 
     setPopups(p => [...p, { id, bid }]);
-    setTimeout(() => setPopups(p => p.filter(x => x.id === id)), 1100);
+    setTimeout(() => setPopups(p => p.filter(x => x.id !== id)), 1100);
 
     setBlast(b => [...b, { id, bid }]);
-    setTimeout(() => setBlast(b => b.filter(x => x.id === id)), 400);
+    setTimeout(() => setBlast(b => b.filter(x => x.id !== id)), 400);
 
     if (mode === "daily") {
       const newExp = exp + 50;
@@ -317,36 +328,115 @@ export default function TodoRPGApp() {
     return `stand_${char}.png`;
   };
 
-  const bubbleText = b => {
+  const getBubbleText = (b) => {
     const char = b.charId ?? "A_01";
     const lines = {
-      A_01: { hit: "きゃっ！", done: "参りました…", low: "あと一つです…！", default: `あと${b.hp}つ \n です` },
-      B_01: { hit: "ぐわっ！", done: "ぐぬぬ…", low: "あと1発だと…！？", default: `あと${b.hp}だ` },
-      C_01: { hit: "ひゃん！", done: "やられた…", low: "もうダメかも…", default: `のこり${b.hp}です` },
-      D_01: { hit: "ぐはっ！", done: "む、無念だ…", low: "まだだ、まだ終わらん！", default: `のこり${b.hp}だ` },
-      E_01: { hit: "うわあっ！", done: "負けちゃった…", low: "もう限界かも…", default: `あと${b.hp}個だよ` },
-      F_01: { hit: "いたっ！", done: "お疲れ様でした", low: "最後の一つだね", default: `残り${b.hp}個です` },
-      G_01: { hit: "きゃー！", done: "完敗です…", low: "ラストスパート！", default: `${b.hp}個残ってる` },
-      H_01: { hit: "おおっ！", done: "やるじゃないか…", low: "最後の砦だ！", default: `まだ${b.hp}個ある` },
-      I_01: { hit: "うぐっ！", done: "完全敗北…", low: "これが最後か…", default: `のこり${b.hp}つです` },
-      J_01: { hit: "ぐぉっ！", done: "見事な戦いだった", low: "最後の力を振り絞る！", default: `あと${b.hp}個だ` },
+      A_01: { 
+        hit: ["きゃっ！", "いたっ！"], 
+        done: ["やられた～", "負けちゃった～"], 
+        low: ["やばっ♡ \n あと一つじゃん！", "もうだめかも～"], 
+        default: ["ざぁこ♡ \n ざぁこ♡", "ざこざこ♡ \n また言い訳～？"] 
+      },
+      B_01: { 
+        hit: ["ぐわっ！", "うぐっ！"], 
+        done: ["ぐぬぬ……", "完敗だぁ……"], 
+        low: ["あと1発だとぉ♡", "やばっ♡"], 
+        default: ["おにーさん、 \n まだ甘えてんの～？", "ざこすぎ～♡ \n 計画も守れないの～？"] 
+      },
+      C_01: { 
+        hit: ["ひゃん！", "きゃー！"], 
+        done: ["やられた……", "もうダメェ…"], 
+        low: ["もうダメかも……", "最後の一つ？やるね♡"], 
+        default: ["ざこおにーさん、 \n 今やろ？ね、ね？", `ざぁこ♡ \n 継続力よわよわ♡`] 
+      },
+      D_01: { 
+        hit: ["ぐはっ！", "ぐっ！"], 
+        done: ["む、無念だ…", "参った…"], 
+        low: ["まだ、まだ終わらん！", "最後の意地だ！"], 
+        default: ["時刻です、 \n 開始をどうぞ♡", "今開始するよ♡"] 
+      },
+      E_01: { 
+        hit: ["うわあっ！", "きゃあっ！"], 
+        done: ["負けちゃったぁ……", "やられちゃったぁ"], 
+        low: ["もう限界かも……♡", "すごい、 \n 最後の一つだ……♡"], 
+        default: ["ざこおにーさん、 \n 今動こうよ？♡", "ざぁこ♡ \n まず一個終わらせろ♡"] 
+      },
+      F_01: { 
+        hit: ["いたっ！", "あいたっ！"], 
+        done: ["見事だ……", "完敗だ……"], 
+        low: ["やるじゃねーか！", "あと一発だぞ！"],
+        default: ["ビビってんの？ \n 勝負！", "弱気？ \n 似合わないねえ"] 
+      },
+      G_01: { 
+        hit: ["きゃー！", "ひゃあっ！"], 
+        done: ["完敗です……", "やられました……"], 
+        low: ["これが最後か…！", "最後の一つ！"], 
+        default: ["ゆっくりでいい、 \n 始めよう", "綺麗に \n 片付けようね"] 
+      },
+      H_01: { 
+        hit: ["おおっ！", "うおっ！"], 
+        done: ["戦闘不能……", "完全敗北……"], 
+        low: ["最後の一つだね", "なかなかやるね"] , 
+        default: ["行動するだけ、 \n 難しい？", `未完了${b.hp}件、 \n 今すぐ着手を`] 
+      },
+      I_01: { 
+        hit: ["うぐっ！", "ぐっ！"], 
+        done: ["や、やられたぁ……", "負けちゃったぁ……"], 
+        low: ["やばっ♡ \n これが最後？", "ひゃっ…ピンチ！"], 
+        default: ["サクッと \n 終わらせよ?♡", "ざぁこ♡ \n 置いてっちゃうよ"] 
+      },
+      J_01: { 
+        hit: ["いたっ！", "あいたっ！"], 
+        done: ["見事な戦いだった", "お見事…"], 
+        low: ["最後の力を振り絞る！", "不覚…！"], 
+        default: ["本日中に \n 仕上げましょ？♡", "まだ様子見？ \n 始めましょ♡"] 
+      },
     };
     const set = lines[char] || lines.A_01;
-    if (hit && hit.bid === b.id) return set.hit;
-    if (b.completed) return set.done;
-    if (b.hp === 1) return set.low;
-    return set.default;
+    
+    // 状態に応じたテキストを決定
+    let targetLines;
+    let stateKey;
+    
+    if (hit && hit.bid === b.id) {
+      targetLines = set.hit;
+      stateKey = `${b.id}-hit`;
+    } else if (b.completed) {
+      targetLines = set.done;
+      stateKey = `${b.id}-done`;
+    } else if (b.hp === 1) {
+      targetLines = set.low;
+      stateKey = `${b.id}-low`;
+    } else {
+      targetLines = set.default;
+      stateKey = `${b.id}-default-${b.hp}`;
+    }
+    
+    // 安定したテキストを取得または生成
+    if (!stableBubbleTexts[stateKey]) {
+      const newText = targetLines[Math.floor(Math.random() * targetLines.length)];
+      setStableBubbleTexts(prev => ({ ...prev, [stateKey]: newText }));
+      return newText;
+    }
+    
+    return stableBubbleTexts[stateKey];
   };
 // TodoRPGApp.jsx  — Part 4 / 4
   const bgClass = mode === "daily" 
-    ? "bg-gradient-to-br from-pink-500 via-red-300 to-yellow-100"
+    ? "bg-gradient-to-br from-orange-400 via-orange-300 to-yellow-200"
     : "bg-gradient-to-br from-red-900 via-red-700 to-red-500";
 
   return (
     <div className={`min-h-screen w-screen flex justify-center ${bgClass} py-10 text-[95%]`}>
-      <main className="w-full max-w-lg text-white relative">
+      <div className="halftone-overlay" aria-hidden="true">
+        <div className="halftone-layer band-1 dots-gap-12 dots-size-16"></div>
+        <div className="halftone-layer band-2 dots-gap-12 dots-size-20"></div>
+        <div className="halftone-layer band-3 dots-gap-12 dots-size-24"></div>
+        <div className="halftone-layer band-4 dots-gap-12 dots-size-32"></div>
+      </div>
+      <main className="w-full max-w-lg text-white relative z-10">
         {levelUp && (
-          <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div className="fixed inset-0 flex items-center justify-center pointer-events-none" style={{zIndex: 9999}}>
             <div className="relative">
               <div className="absolute inset-0 text-6xl font-bold text-yellow-400 animate-pulse opacity-70 blur-sm">LEVEL UP!</div>
               <div className="absolute inset-0 text-6xl font-bold text-red-400 animate-bounce opacity-50 blur-sm">LEVEL UP!</div>
@@ -361,76 +451,95 @@ export default function TodoRPGApp() {
           </div>
         )}
         {/* タブ切り替え */}
-        <div className="flex mb-6 bg-white/20 rounded-lg p-1">
+        <div className="flex gap-3 mb-6">
           <button
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+            className={`flex-1 py-3 px-6 rounded-full text-sm font-bold transition-all transform hover:scale-105 ${
               mode === "daily" 
-                ? "bg-white text-gray-800 shadow" 
-                : "text-white hover:bg-white/10"
+                ? "bg-white text-orange-600 shadow-lg" 
+                : "bg-white/20 text-white border-2 border-white/30 hover:bg-white/30"
             }`}
             onClick={() => setMode("daily")}
           >
-            🌅 デイリータスク
+            デイリー
           </button>
           <button
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+            className={`flex-1 py-3 px-6 rounded-full text-sm font-bold transition-all transform hover:scale-105 ${
               mode === "longterm" 
-                ? "bg-white text-gray-800 shadow" 
-                : "text-white hover:bg-white/10"
+                ? "bg-white text-red-600 shadow-lg" 
+                : "bg-white/20 text-white border-2 border-white/30 hover:bg-white/30"
             }`}
             onClick={() => setMode("longterm")}
           >
-            🏰 長期タスク
+            長期クエスト
           </button>
         </div>
 
-        <h1 className="text-4xl font-bold text-center mb-6">
-          {mode === "daily" ? "Todo RPG ⚔️" : "Long Quest 🏰"}
-        </h1>
+        <div className="relative mb-8">
+          <h1 className="text-5xl font-black text-center drop-shadow-lg">
+            <span className="bg-gradient-to-r from-white to-yellow-100 bg-clip-text text-transparent">
+              {mode === "daily" ? "Todo RPG" : "Long Quest"}
+            </span>
+          </h1>
+          <button
+            className="absolute top-0 right-0 w-12 h-12 bg-white hover:bg-yellow-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-xl transition-all transform hover:scale-110 shadow-lg"
+            onClick={() => setShowHelpModal(true)}
+            title="ヘルプ"
+          >
+            ?
+          </button>
+        </div>
 
-        <div className="sticky top-4 z-40 bg-white/90 backdrop-blur-sm rounded-xl p-3 mb-4 shadow-lg border border-white/20">
+        <div className="sticky top-4 z-40 bg-gradient-to-r from-white to-orange-50 backdrop-blur-sm rounded-2xl p-4 mb-6 shadow-[0_3px_0_rgba(0,0,0,0.15)] border-2" style={{borderColor: 'rgba(107,114,128,0.9)'}}>
           {mode === "daily" ? (
-            <div className="flex items-center gap-3">
-              <p className="text-xl text-gray-800 font-semibold whitespace-nowrap">Level: {level}</p>
-              <div className="flex-1 bg-gray-200 rounded-full h-4 dark:bg-gray-700">
-                <div className="bg-blue-600 h-4 rounded-full" style={{ width: `${(exp / (20 + level * 30)) * 100}%` }}></div>
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-4 py-2 rounded-full font-bold text-lg shadow-lg">
+                Lv.{level}
+              </div>
+              <div className="flex-1">
+                <div className="bg-orange-100 rounded-full h-6 border-2 border-orange-300">
+                  <div className="bg-gradient-to-r from-orange-500 to-yellow-500 h-full rounded-full transition-all duration-500 shadow-inner" 
+                       style={{ width: `${(exp / (20 + level * 30)) * 100}%` }}></div>
+                </div>
+                <p className="text-xs text-orange-700 mt-1 font-medium">{exp} / {20 + level * 30} EXP</p>
               </div>
             </div>
           ) : (
-            <>
-              <p className="text-xl text-gray-800 font-semibold">💰 Gold: {gold}</p>
-              <p className="text-sm text-gray-600">長期タスクを完了してGoldを蓄積しよう！</p>
-            </>
+            <div className="text-center">
+              <p className="text-2xl text-yellow-600 font-bold flex items-center justify-center gap-2">
+                <span className="text-3xl">{gold}</span> <span className="text-lg">Gold</span>
+              </p>
+              <p className="text-sm text-orange-700 font-medium mt-1">長期クエストでGoldを蓄積しよう！</p>
+            </div>
           )}
         </div>
 
         {/* プリセット管理ボタン */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-3 mb-6">
           <button
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+            className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full text-sm font-bold transition-all transform hover:scale-105 shadow-lg"
             onClick={() => setShowPresetModal(true)}
           >
-            📝 プリセット選択
+            プリセット選択
           </button>
           <button
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm"
+            className="flex-1 py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-full text-sm font-bold transition-all transform hover:scale-105 shadow-lg"
             onClick={() => setShowCreatePreset(true)}
           >
-            ➕ プリセット作成
+            プリセット作成
           </button>
         </div>
 
         {/* 新ブロックフォーム */}
-        <div className="bg-white/90 rounded-xl p-3 shadow mb-8">
+        <div className="bg-gradient-to-r from-white to-orange-50 rounded-2xl p-4 shadow-[0_3px_0_rgba(0,0,0,0.15)] border-2 mb-8" style={{borderColor: 'rgba(107,114,128,0.9)'}}>
           <textarea
-            rows={2}
-            className="w-full p-2 bg-white text-gray-800 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
+            rows={3}
+            className="w-full p-3 bg-white text-gray-800 rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-gray-500 resize-none text-sm"            style={{borderColor: 'rgba(107,114,128,0.9)', '--tw-ring-color': 'rgba(107,114,128,0.9)'}}
             placeholder="スペース・改行でタスクを入力..."
             value={headerText}
             onChange={e => setHeaderText(e.target.value)}
           />
           <button
-            className="mt-2 w-full sm:w-auto px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg"
+            className="mt-3 w-full py-4 px-6 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-bold rounded-full text-lg transition-all transform hover:scale-105 shadow-lg"
             onClick={addBlockFromHeader}
           >
             追加（新ブロック）
@@ -439,27 +548,31 @@ export default function TodoRPGApp() {
 
         {/* ブロック一覧 */}
         {[...currentState.blocks].reverse().map(b => (
-          <section key={b.id} className={`relative bg-white/90 rounded-xl p-4 shadow-xl text-gray-800 mb-6 ${b.completed && "opacity-60 grayscale"}`}>
-            <button className="absolute top-1 right-2 text-xl text-gray-500 hover:text-red-500" onClick={() => currentDispatch({ type: ACT.REMOVE, bid: b.id })}>×</button>
+          <section
+            key={b.id}
+            className={`relative rounded-2xl p-5 shadow-[0_3px_0_rgba(0,0,0,0.15)] border-2 text-gray-800 mb-6 transition-all ${b.completed ? "opacity-60 grayscale" : "hover:shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:scale-102"}`}
+            style={{ backgroundColor: '#fef7ef', borderColor: 'rgba(107,114,128,0.9)' }}
+          >
+            <button className="absolute top-1 right-2 text-xl text-gray-500 hover:text-red-500 bg-transparent p-0 border-0 shadow-none" onClick={() => currentDispatch({ type: ACT.REMOVE, bid: b.id })}>×</button>
             <button 
-              className="absolute top-1 right-8 text-xl text-gray-500 hover:text-blue-500" 
+              className="absolute top-1 right-8 text-xl text-gray-500 hover:text-blue-500 bg-transparent p-0 border-0 shadow-none" 
               onClick={() => createPresetFromBlock(b)}
               title="プリセットとして保存"
             >
-              📝
+              S
             </button>
 
             {b.title && <h2 className="text-xl font-bold mb-2 text-center">{b.title}</h2>}
 
             {/* HP & enemy */}
             <div className="relative flex flex-col items-center mb-4">
-              <span className="font-mono text-lg">{"❤️".repeat(b.hp) + "🖤".repeat(b.max - b.hp)}</span>
+              <span className="font-mono text-lg">{"♥".repeat(b.hp) + "♡".repeat(b.max - b.hp)}</span>
 
               <div className="relative" ref={el => (enemyRefs.current[b.id] = el)}>
                 {/* ▼ 吹き出しの表示位置を調整 ▼ */}
                 {/* top: 上下位置 (負の値が大きいほど上) */}
                 {/* left: 左右位置 (負の値が大きいほど左) */}
-                <SpeechBubble text={bubbleText(b)} size={140} className="absolute top-[-10px] left-[-100px]" />
+                <SpeechBubble text={getBubbleText(b)} size={140} className="absolute top-[-10px] left-[-100px]" />
 
                 <img src={iconSrc(b)} alt="" className={`w-44 h-44 object-contain ${hit && hit.bid === b.id ? "animate-hitShake" : ""}`} />
 
@@ -495,25 +608,27 @@ export default function TodoRPGApp() {
 
             {/* ＋ボタン & インラインフォーム */}
             {addingBid === b.id ? (
-              <div className="mt-4 bg-white/90 p-3 rounded-lg shadow">
+              <div className="mt-4 bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-xl shadow-[0_3px_0_rgba(0,0,0,0.15)] border-2" style={{borderColor: 'rgba(107,114,128,0.9)'}}>
                 <textarea
                   rows={2}
-                  className="w-full p-2 bg-white border rounded-md resize-none text-sm text-gray-800"
+                  className="w-full p-3 bg-white border-2 rounded-lg resize-none text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500" style={{borderColor: 'rgba(107,114,128,0.9)', '--tw-ring-color': 'rgba(107,114,128,0.9)'}}
                   placeholder="スペース・改行でタスクを入力..."
                   value={blockInputs[b.id] ?? ""}
                   onChange={e => setBlockInputs(inp => ({ ...inp, [b.id]: e.target.value }))}
                 />
-                <button className="mt-1 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm" onClick={() => confirmAddToBlock(b.id)}>
-                  追加
-                </button>
-                <button className="mt-1 ml-2 px-2 py-1 text-sm text-gray-600" onClick={() => setAddingBid(null)}>
-                  キャンセル
-                </button>
+                <div className="flex gap-2 mt-3">
+                  <button className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full text-sm font-bold transition-all transform hover:scale-105" onClick={() => confirmAddToBlock(b.id)}>
+                    追加
+                  </button>
+                  <button className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-full text-sm font-bold transition-all" onClick={() => setAddingBid(null)}>
+                    キャンセル
+                  </button>
+                </div>
               </div>
             ) : (
               !b.completed && (
-                <button className="mt-4 w-8 h-8 flex items-center justify-center bg-purple-500 text-white rounded-full text-lg" onClick={() => setAddingBid(b.id)}>
-                  ＋
+                <button className="mt-4 w-12 h-12 flex items-center justify-center bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full text-2xl font-bold transition-all transform hover:scale-110 shadow-lg" onClick={() => setAddingBid(b.id)}>
+                  +
                 </button>
               )
             )}
@@ -552,13 +667,13 @@ export default function TodoRPGApp() {
                             className="text-blue-500 hover:text-blue-700 text-sm"
                             onClick={() => editPreset(preset)}
                           >
-                            ✏️
+                            編集
                           </button>
                           <button
                             className="text-red-500 hover:text-red-700 text-sm"
                             onClick={() => deletePreset(preset.id)}
                           >
-                            🗑️
+                            削除
                           </button>
                         </div>
                       </div>
@@ -657,6 +772,146 @@ export default function TodoRPGApp() {
                     キャンセル
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/*
+          ヘルプモーダル（アプリ説明と使い方）
+          - アプリ内の説明文やガイド文を修正したい場合は、このモーダル内のテキストを編集してください。
+          - 主な構成: 「アプリの説明」→「基本操作」→「モード説明」→「データについて」
+          - 目印となるキーワード: "ヘルプモーダル" / "Todo RPG ガイド"
+        */}
+        {/* ヘルプモーダル */}
+        {showHelpModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto m-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  Todo RPG ガイド
+                </h3>
+                <button
+                  className="text-gray-500 hover:text-gray-700 text-xl"
+                  onClick={() => setShowHelpModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-6 text-gray-700">
+                {/* アプリの説明（概要）
+                   - アプリの一言説明や目的を変更したい場合はこのセクションの文言を編集します。 */}
+                <section>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    アプリの説明
+                  </h4>
+                  <div className="bg-white/70 p-3 rounded-lg text-sm">
+                    <p className="mb-1">
+                      世の中のToDoリストって、完了してもちょっとキラッとする程度で、全然タスクを”完了”した感がなくない？との思いから「完了した手ごたえのあるToDoリスト」を作ろうとしたら、なぜかキャラクターも生えてきてしまいました。
+                      怠惰を司る小悪魔を長押しで「攻撃」して完了させることで、レベルアップや演出を楽しみながら前に進めます。
+                    </p>
+                    <h5 className="text-base font-semibold text-gray-800 mt-2 mb-1">おすすめの使い方</h5>
+                    <p className="mb-2">
+                      「起床」「歯を磨く」など小分けにして一つずつ完了していくと日常をよりゲーム的に楽しむことができます。
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-xs mt-6">
+                      <li>タスクはブロック単位で管理し、残り数はHP表示で確認</li>
+                      <li>デイリー（毎日リセット）と長期クエスト（継続保存）の2モード</li>
+                      <li>よく使うタスクはプリセットに保存して素早く呼び出し</li>
+                    </ul>
+                  </div>
+                </section>
+                {/* 基本操作 */}
+                <section>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    基本操作
+                  </h4>
+                  <div className="space-y-3 text-sm">
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <h5 className="font-medium mb-2">1. タスクブロックを作成</h5>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li>テキストエリアにタスクを入力（スペース・改行で区切り）</li>
+                        <li>文字の頭に<code className="bg-gray-200 px-1 rounded">##</code>または<code className="bg-gray-200 px-1 rounded">#</code>を付けた文字列はそのブロックのタイトルという扱いになります。（タスクとはなりません）</li>
+                        <li>「追加（新ブロック）」ボタンでブロック作成</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <h5 className="font-medium mb-2">2. タスクを完了</h5>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li><strong>タスクを1.5秒間長押し</strong>して「攻撃」できます。</li>
+                        <li>タスクを完了するごとにEXPがたまり、EXPが一定量上がるとレベルアップします。</li>
+                        <li>レベルアップすると何がある？おめでたい感じのエフェクトが出て、ちょっと嬉しい気分になります。それ以外は何もありません……今のところ。</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <h5 className="font-medium mb-2">3. プリセット活用</h5>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li>「プリセット選択」で保存済みタスクを選択</li>
+                        <li>「プリセット作成」で新しいプリセットを作成</li>
+                        <li>ブロック右上のSボタンで既存ブロックをプリセット化</li>
+                      </ul>
+                    </div>
+                  </div>
+                </section>
+
+                {/* モード説明
+                    - 各モードの説明文や見出しを変更したい場合はこのセクションを編集します。 */}
+                <section>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    モード切り替え
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="bg-gradient-to-br from-pink-50 to-yellow-50 p-4 rounded-lg border">
+                      <h5 className="font-medium mb-2 text-pink-700">デイリータスク</h5>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li>経験値・レベル制システム</li>
+                        <li>毎日午前4時にリセット</li>
+                        <li>タスク完了で経験値+50獲得</li>
+                        <li>レベルアップ時は華やかなエフェクト</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border">
+                      <h5 className="font-medium mb-2 text-red-700">長期タスク</h5>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li>ゴールドを蓄積するシステム</li>
+                        <li>データは永続的に保存</li>
+                        <li>タスク完了でゴールド+100獲得</li>
+                        <li>大きなプロジェクト管理に最適</li>
+                      </ul>
+                    </div>
+                  </div>
+                </section>
+
+                
+
+                {/* 技術情報 */}
+                <section>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                    データについて
+                  </h4>
+                  <div className="bg-yellow-50 p-4 rounded-lg text-sm">
+                    <p className="mb-2">すべてのデータはブラウザのlocalStorageに保存されます：</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li><strong>デイリータスク:</strong> 毎日4時リセット（レベル・経験値含む）</li>
+                      <li><strong>長期タスク:</strong> 永続保存（ゴールド含む）</li>
+                      <li><strong>プリセット:</strong> 永続保存</li>
+                      <li>ブラウザデータをクリアすると全て消失します</li>
+                    </ul>
+                  </div>
+                </section>
+              </div>
+
+              <div className="mt-6 text-center">
+                <button
+                  className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
+                  onClick={() => setShowHelpModal(false)}
+                >
+                  始める！
+                </button>
               </div>
             </div>
           </div>

@@ -15,11 +15,11 @@ export default function SpeechBubble({ text, size = 140, className = "" }) {
   const startY = h / 2 - ((lines.length - 1) * lineH) / 2;
 
   /* ▼ 吹き出しの「しっぽ」の形を調整 ▼ */
-  const baseY     = h - 10;      // しっぽの付け根のY座標 (基本変えない)
+  const baseY     = h - 30;      // しっぽの付け根のY座標 (基本変えない)
   const baseLeft  = size * 0.60; // しっぽの付け根の左端 (0.0 ~ 1.0)
-  const baseRight = size * 0.84; // しっぽの付け根の右端 (0.0 ~ 1.0)
-  const tipX      = size * 0.95; // しっぽの先端のX座標 (0.0 ~ 1.0)
-  const tipY      = h + 16;      // しっぽの先端のY座標 (h より大きい値)
+  const baseRight = size * 0.80; // しっぽの付け根の右端 (0.0 ~ 1.0)
+  const tipX      = size * 0.96; // しっぽの先端のX座標 (0.0 ~ 1.0)
+  const tipY      = h + 2;      // しっぽの先端のY座標 (h より大きい値)
 
   return (
     <svg viewBox={`0 0 ${size} ${h + 20}`} width={size} height={h + 20} className={className}>
