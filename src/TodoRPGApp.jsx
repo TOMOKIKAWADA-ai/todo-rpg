@@ -475,13 +475,13 @@ export default function TodoRPGApp() {
         </div>
 
         <div className="relative mb-8">
-          <h1 className="text-5xl font-black text-center drop-shadow-lg">
-            <span className="bg-gradient-to-r from-white to-yellow-100 bg-clip-text text-transparent">
-              {mode === "daily" ? "Todo RPG" : "Long Quest"}
-            </span>
-          </h1>
+          <img
+            src="/logo-01.png"
+            alt="Todo RPG ロゴ"
+            className="mx-auto block h-auto w-[21rem] sm:w-96 md:w-[27rem] drop-shadow-[0_6px_12px_rgba(0,0,0,0.35)]"
+          />
           <button
-            className="absolute top-0 right-0 w-12 h-12 bg-white hover:bg-yellow-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-xl transition-all transform hover:scale-110 shadow-lg"
+            className="absolute top-0 right-0 w-10 h-10 bg-white hover:bg-yellow-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg transition-all transform hover:scale-110 shadow-lg"
             onClick={() => setShowHelpModal(true)}
             title="ヘルプ"
           >
