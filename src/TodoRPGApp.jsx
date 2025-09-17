@@ -49,6 +49,24 @@ const loadLongTerm = () => {
 const save = (s) => localStorage.setItem("todoRPG", JSON.stringify(s));
 const saveLongTerm = (s) => localStorage.setItem("todoRPG_longterm", JSON.stringify(s));
 
+const FilePenIcon = ({ className, style }) => (
+  <svg
+    className={className}
+    style={style}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12.5 22H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v9.5" />
+    <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+    <path d="M13.378 15.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />
+  </svg>
+);
+
 function reducer(state, a) {
   switch (a.type) {
     case ACT.ADD_BLOCK: {
@@ -422,6 +440,9 @@ export default function TodoRPGApp() {
     return stableBubbleTexts[stateKey];
   };
 // TodoRPGApp.jsx  — Part 4 / 4
+  const requiredExp = 20 + level * 30;
+  const expProgress = Math.max(0, Math.min(1, requiredExp === 0 ? 0 : exp / requiredExp));
+
   const bgClass = mode === "daily" 
     ? "bg-gradient-to-br from-orange-400 via-orange-300 to-yellow-200"
     : "bg-gradient-to-br from-red-900 via-red-700 to-red-500";
@@ -434,7 +455,7 @@ export default function TodoRPGApp() {
         <div className="halftone-layer band-3 dots-gap-12 dots-size-24"></div>
         <div className="halftone-layer band-4 dots-gap-12 dots-size-32"></div>
       </div>
-      <main className="w-full max-w-lg text-white relative z-10">
+      <main className="w-full max-w-lg text-white relative z-10 pb-24">
         {levelUp && (
           <div className="fixed inset-0 flex items-center justify-center pointer-events-none" style={{zIndex: 9999}}>
             <div className="relative">
@@ -451,27 +472,27 @@ export default function TodoRPGApp() {
           </div>
         )}
         {/* タブ切り替え */}
-        <div className="flex gap-3 mb-6">
-          <button
-            className={`flex-1 py-3 px-6 rounded-full text-sm font-bold transition-all transform hover:scale-105 ${
-              mode === "daily" 
-                ? "bg-white text-orange-600 shadow-lg" 
-                : "bg-white/20 text-white border-2 border-white/30 hover:bg-white/30"
-            }`}
-            onClick={() => setMode("daily")}
-          >
-            デイリー
-          </button>
-          <button
-            className={`flex-1 py-3 px-6 rounded-full text-sm font-bold transition-all transform hover:scale-105 ${
-              mode === "longterm" 
-                ? "bg-white text-red-600 shadow-lg" 
-                : "bg-white/20 text-white border-2 border-white/30 hover:bg-white/30"
-            }`}
-            onClick={() => setMode("longterm")}
-          >
-            長期クエスト
-          </button>
+        <div className="mb-6 flex justify-center">
+          <div className="relative flex w-full max-w-sm items-center overflow-hidden rounded-2xl border border-white/40 bg-white/10 px-1 py-1 shadow-[0_4px_14px_rgba(0,0,0,0.2)] backdrop-blur-sm">
+            <div
+              className="pointer-events-none absolute inset-y-1 left-1 rounded-xl bg-white shadow transition-transform duration-300 ease-out"
+              style={{ width: 'calc(50% - 0.25rem)', transform: mode === 'daily' ? 'translateX(0)' : 'translateX(100%)' }}
+            ></div>
+            <button
+              type="button"
+              className={`relative z-10 flex-1 py-1.5 text-sm font-bold transition-colors ${mode === 'daily' ? 'text-orange-600' : 'text-white/70'}`}
+              onClick={() => setMode('daily')}
+            >
+              デイリー
+            </button>
+            <button
+              type="button"
+              className={`relative z-10 flex-1 py-1.5 text-sm font-bold transition-colors ${mode === 'longterm' ? 'text-red-600' : 'text-white/70'}`}
+              onClick={() => setMode('longterm')}
+            >
+              長期クエスト
+            </button>
+          </div>
         </div>
 
         <div className="relative mb-8">
@@ -489,30 +510,16 @@ export default function TodoRPGApp() {
           </button>
         </div>
 
-        <div className="sticky top-4 z-40 bg-gradient-to-r from-white to-orange-50 backdrop-blur-sm rounded-2xl p-4 mb-6 shadow-[0_3px_0_rgba(0,0,0,0.15)] border-2" style={{borderColor: 'rgba(107,114,128,0.9)'}}>
-          {mode === "daily" ? (
-            <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-4 py-2 rounded-full font-bold text-lg shadow-lg">
-                Lv.{level}
-              </div>
-              <div className="flex-1">
-                <div className="bg-orange-100 rounded-full h-6 border-2 border-orange-300">
-                  <div className="bg-gradient-to-r from-orange-500 to-yellow-500 h-full rounded-full transition-all duration-500 shadow-inner" 
-                       style={{ width: `${(exp / (20 + level * 30)) * 100}%` }}></div>
-                </div>
-                <p className="text-xs text-orange-700 mt-1 font-medium">{exp} / {20 + level * 30} EXP</p>
-              </div>
-            </div>
-          ) : (
+        {mode === "longterm" && (
+          <div className="sticky top-4 z-40 bg-gradient-to-r from-white to-orange-50 backdrop-blur-sm rounded-2xl p-4 mb-6 shadow-[0_3px_0_rgba(0,0,0,0.15)] border-2" style={{ borderColor: 'rgba(107,114,128,0.9)' }}>
             <div className="text-center">
               <p className="text-2xl text-yellow-600 font-bold flex items-center justify-center gap-2">
                 <span className="text-3xl">{gold}</span> <span className="text-lg">Gold</span>
               </p>
               <p className="text-sm text-orange-700 font-medium mt-1">長期クエストでGoldを蓄積しよう！</p>
             </div>
-          )}
-        </div>
-
+          </div>
+        )}
         {/* プリセット管理ボタン */}
         <div className="flex gap-3 mb-6">
           <button
@@ -559,14 +566,23 @@ export default function TodoRPGApp() {
               onClick={() => createPresetFromBlock(b)}
               title="プリセットとして保存"
             >
-              S
+              <FilePenIcon className="w-5 h-5" style={{ transform: "translateY(4px)" }} />
             </button>
 
             {b.title && <h2 className="text-xl font-bold mb-2 text-center">{b.title}</h2>}
 
             {/* HP & enemy */}
             <div className="relative flex flex-col items-center mb-4">
-              <span className="font-mono text-lg">{"♥".repeat(b.hp) + "♡".repeat(b.max - b.hp)}</span>
+              <div className="flex items-center gap-1 mb-[30px]">
+                {Array.from({ length: b.max }).map((_, idx) => (
+                  <img
+                    key={idx}
+                    src={idx < b.hp ? "/HP_t.svg" : "/HP_f.svg"}
+                    alt=""
+                    className="w-[17px] h-[17px]"
+                  />
+                ))}
+              </div>
 
               <div className="relative" ref={el => (enemyRefs.current[b.id] = el)}>
                 {/* ▼ 吹き出しの表示位置を調整 ▼ */}
@@ -594,12 +610,17 @@ export default function TodoRPGApp() {
                   return (
                     <motion.li key={t.id}
                       initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }} whileTap={{ scale: 0.96 }}
-                      className={`list-none p-3 rounded-lg shadow transition-all duration-300 ease-in-out ${t.done ? "bg-gray-300 line-through text-gray-600" : `${pressColor} text-gray-800 cursor-pointer`} ${shake}`}
+                      className={`list-none p-3 rounded-lg shadow transition-all duration-300 ease-in-out ${t.done ? "bg-gray-300 text-gray-600" : `${pressColor} text-gray-800 cursor-pointer`} ${shake}`}
                       onPointerDown={() => !t.done && pressStart(b.id, t)}
                       onPointerUp={pressEnd}
                       onPointerLeave={pressEnd}
                     >
-                      {t.text}
+                      <div className="flex items-center gap-2">
+                        <img src="/task-01.svg" alt="" className="w-5 h-5 object-contain" />
+                        <span className={`flex-1 break-words ${t.done ? "line-through" : ""}`}>
+                          {t.text}
+                        </span>
+                      </div>
                     </motion.li>
                   );
                 })}
@@ -809,7 +830,7 @@ export default function TodoRPGApp() {
                   <div className="bg-white/70 p-3 rounded-lg text-sm">
                     <p className="mb-1">
                       世の中のToDoリストって、完了してもちょっとキラッとする程度で、全然タスクを”完了”した感がなくない？との思いから「完了した手ごたえのあるToDoリスト」を作ろうとしたら、なぜかキャラクターも生えてきてしまいました。
-                      怠惰を司る小悪魔を長押しで「攻撃」して完了させることで、レベルアップや演出を楽しみながら前に進めます。
+                      怠惰を司る小悪魔を長押しで「攻撃」して完了させることで、レベルアップや演出を楽しめます。
                     </p>
                     <h5 className="text-base font-semibold text-gray-800 mt-2 mb-1">おすすめの使い方</h5>
                     <p className="mb-2">
@@ -917,6 +938,19 @@ export default function TodoRPGApp() {
           </div>
         )}
       </main>
+
+      {mode === "daily" && (
+        <div className="fixed bottom-0 left-0 right-0 z-[9999] px-4 pb-2 pt-2 bg-white/80 backdrop-blur-sm shadow-[0_-4px_12px_rgba(0,0,0,0.15)] pointer-events-none">
+          <div className="mx-auto max-w-lg pointer-events-auto">
+            <div className="flex items-center gap-2">
+              <span className="text-[0.65rem] font-bold text-orange-900/90 bg-white px-2 py-0.5 rounded-full shadow-sm">Lv.{level}</span>
+              <div className="flex-1 h-1.5 rounded-full bg-white/70 overflow-hidden border border-white/70">
+                <div className="h-full bg-gradient-to-r from-orange-500 to-yellow-400 opacity-80 transition-all duration-500" style={{ width: `${expProgress * 100}%` }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CSS（slash / dmg / shake / blast） */}
       <style>{`

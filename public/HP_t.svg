@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_レイヤー_3" data-name="レイヤー 3" xmlns="http://www.w3.org/2000/svg" width="44.26" height="44.26" viewBox="0 0 44.26 44.26">
+  <defs>
+    <style>
+      .cls-1 {
+        stroke: #cc311b;
+        stroke-width: 13px;
+      }
+
+      .cls-1, .cls-2 {
+        fill: none;
+      }
+
+      .cls-2 {
+        stroke: #fcf6f1;
+        stroke-width: 9px;
+      }
+
+      .cls-3 {
+        fill: #d61518;
+      }
+    </style>
+  </defs>
+  <path class="cls-1" d="M22.95,34s-11.29-9.24-11.8-15.4,8.88-1.22,8.88-1.22c0,0,6.87-13.86,12-8.21s-9.07,24.83-9.07,24.83Z"/>
+  <path class="cls-2" d="M22.95,34s-11.29-9.24-11.8-15.4,8.88-1.22,8.88-1.22c0,0,6.87-13.86,12-8.21s-9.07,24.83-9.07,24.83Z"/>
+  <path class="cls-3" d="M22.95,34s-11.29-9.24-11.8-15.4,8.88-1.22,8.88-1.22c0,0,6.87-13.86,12-8.21s-9.07,24.83-9.07,24.83Z"/>
+</svg>

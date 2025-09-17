@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_レイヤー_3" data-name="レイヤー 3" xmlns="http://www.w3.org/2000/svg" width="25.79" height="25.79" viewBox="0 0 25.79 25.79">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #a6a6a6;
+      }
+    </style>
+  </defs>
+  <polygon class="cls-1" points="9.88 16.94 10.18 17.25 11.51 18.62 21.4 13.3 21.35 6.09 14.15 5.84 8.55 15.57 9.88 16.94"/>
+  <rect class="cls-1" x="7.56" y="14.4" width="2.47" height="7.79" transform="translate(-10.26 11.31) rotate(-44.19)"/>
+  <rect class="cls-1" x="5.08" y="18.65" width="2.93" height="3.68" transform="translate(-12.43 10.36) rotate(-44.19)"/>
+</svg>
